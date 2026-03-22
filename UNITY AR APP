@@ -1,0 +1,49 @@
+using System.Collections;
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class APIManager : MonoBehaviour
+{
+    public FloodVisualizer visualizer;
+
+    public void StartPrediction()
+    {
+        StartCoroutine(SendRequest());
+    }
+
+    IEnumerator SendRequest()
+    {
+        string url = "http://YOUR_IP:5000/predict";
+
+        string json = "{\"rainfall\":150,\"river_level\":9,\"humidity\":85}";
+
+        UnityWebRequest request = new UnityWebRequest(url, "POST");
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Response: " + request.downloadHandler.text);
+
+            // Simple parsing
+            if (request.downloadHandler.text.Contains("\"flood_risk\":1"))
+            {
+                visualizer.ShowFloodRisk(1);
+            }
+            else
+            {
+                visualizer.ShowFloodRisk(0);
+            }
+        }
+        else
+        {
+            Debug.Log("Error: " + request.error);
+        }
+    }
+}
